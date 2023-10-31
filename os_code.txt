@@ -1,0 +1,182 @@
+/* Code-1*/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+sem_t pen, paper, ques_paper;
+sem_t student_sem[3];
+sem_t teacher_sem;
+int total_assign = 0;
+
+void *student(void *arg) {
+    int student_id = *(int *)arg;
+
+    sem_wait(&teacher_sem);
+
+    if (student_id == 1) {
+        printf("Student 1 is waiting for pen and paper.\n");
+        sem_wait(&pen);
+        sem_wait(&paper);
+    } else if (student_id == 2) {
+        printf("Student 2 is waiting for paper and question paper.\n");
+        sem_wait(&paper);
+        sem_wait(&ques_paper);
+    } else {
+        printf("Student 3 is waiting for pen and question paper.\n");
+        sem_wait(&pen);
+        sem_wait(&ques_paper);
+    }
+
+    printf("Student %d has completed the assignment.\n", student_id);
+    total_assign++;
+
+    sem_post(&teacher_sem);
+
+    sem_post(&pen);
+    sem_post(&paper);
+    sem_post(&ques_paper);
+
+    pthread_exit(NULL);
+}
+
+void *teacher(void *arg) {
+    while (total_assign < 15) {
+        int item1 = rand() % 3;
+        int item2;
+        do {
+            item2 = rand() % 3;
+        } while (item1 == item2);
+
+        if (item1 == 0 && item2 == 1) {
+            sem_post(&pen);
+            sem_post(&paper);
+        } else if (item1 == 1 && item2 == 0) {
+            sem_post(&pen);
+            sem_post(&paper);
+        } else if (item1 == 1 && item2 == 2) {
+            sem_post(&paper);
+            sem_post(&ques_paper);
+        } else {
+            sem_post(&ques_paper);
+            sem_post(&pen);
+        }
+
+        sem_wait(&teacher_sem);
+        sem_post(&teacher_sem);
+    }
+}
+
+int main() {
+    pthread_t students[3];
+    pthread_t teacher_thread;
+
+    int student_ids[3] = {1, 2, 3};  
+    int i;
+
+    sem_init(&pen, 0, 1);
+    sem_init(&paper, 0, 1);
+    sem_init(&ques_paper, 0, 1);
+    sem_init(&teacher_sem, 0, 1);
+
+    for (i = 0; i < 3; i++) {
+        sem_init(&student_sem[i], 0, 0);
+    }
+
+    for (i = 0; i < 3; i++) {
+        pthread_create(&students[i], NULL, student, &student_ids[i]);
+    }
+
+    pthread_create(&teacher_thread, NULL, teacher, NULL);
+
+    for (i = 0; i < 3; i++) {
+        pthread_join(students[i], NULL);
+    }
+
+    pthread_cancel(teacher_thread);
+
+    printf("Total assignments completed by students: %d\n", total_assign);
+
+    return 0;
+}
+
+
+/*Code -1*/
+
+
+/*Code-2*/
+
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+sem_t student_queue, teacher_queue, counter_mutex;
+int student_count = 0, teacher_count = 0;
+
+void* student(void* arg) {
+    int id = (int)arg; 
+    printf("Student %d enters the library and stands in the student queue.\n", id);
+    
+    sem_wait(&counter_mutex);
+    student_count++;
+    if (teacher_count > 0) {
+        teacher_count--;
+        sem_post(&teacher_queue);
+    } else {
+        sem_post(&student_queue);
+    }
+    sem_post(&counter_mutex);
+
+    printf("Student %d is at the counter to get books issued.\n", id);
+}
+
+void* teacher(void* arg) {
+    int id = (int)arg; 
+    printf("Teacher %d enters the library and stands in the teacher queue.\n", id);
+
+    sem_wait(&counter_mutex);
+    teacher_count++;
+    if (student_count > 0) {
+        student_count--;
+        sem_post(&student_queue);
+    } else {
+        sem_post(&teacher_queue);
+    }
+    sem_post(&counter_mutex);
+
+    printf("Teacher %d is at the counter to get books issued.\n", id);
+}
+
+int main() {
+    pthread_t teacher_threads[2], student_threads[3];
+    int teacher_ids[2] = {1, 2};
+    int student_ids[3] = {1, 2, 3};
+
+    sem_init(&student_queue, 0, 0);
+    sem_init(&teacher_queue, 0, 0);
+    sem_init(&counter_mutex, 0, 1);
+    int i;
+
+    for ( i = 0; i < 2; i++) {
+        pthread_create(&teacher_threads[i], NULL, teacher, (void*)teacher_ids[i]); 
+    }
+
+    for ( i = 0; i < 3; i++) {
+        pthread_create(&student_threads[i], NULL, student, (void*)student_ids[i]); 
+    }
+
+    for ( i = 0; i < 2; i++) {
+        pthread_join(teacher_threads[i], NULL);
+    }
+
+    for ( i = 0; i < 3; i++) {
+        pthread_join(student_threads[i], NULL);
+    }
+
+    return 0;
+}
+
+
+/*Code -2*/
