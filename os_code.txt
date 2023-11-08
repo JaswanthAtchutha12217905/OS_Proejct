@@ -109,74 +109,123 @@ int main() {
 /*Code-2*/
 
 #include <stdio.h>
-#include <pthread.h>
-#include <semaphore.h>
+#include <stdlib.h>
 
-sem_t student_queue, teacher_queue, counter_mutex;
-int student_count = 0, teacher_count = 0;
-
-void* student(void* arg) {
-    int id = (int)arg; 
-    printf("Student %d enters the library and stands in the student queue.\n", id);
+void teacher_and_student() {
     
-    sem_wait(&counter_mutex);
-    student_count++;
-    if (teacher_count > 0) {
-        teacher_count--;
-        sem_post(&teacher_queue);
-    } else {
-        sem_post(&student_queue);
+    int p[30], pr[30], bt[30], temp, max, wt[30], ta[30], sum = 0, i, j, n;
+    int c = 0, d = 0;
+    wt[0] = 0;
+    printf("Enter the number of persons=");
+    scanf("%d", &n);
+    printf("Enter 0 for teacher and 1 for student\n");
+    for (i = 0; i < n; i++) {
+        p[i] = i + 1;
+        bt[i] = 1;
+        printf("Who arrived %d? =", i + 1);
+        scanf("%d", &pr[i]);
     }
-    sem_post(&counter_mutex);
+    for (i = 0; i < n; i++) {
+        max = i;
+        for (j = i + 1; j < n; j++) {
+            if (pr[j] < pr[max])
+                max = j;
+        }
+        temp = pr[max];
+        pr[max] = pr[i];
+        pr[i] = temp;
+        temp = bt[max];
+        bt[max] = bt[i];
+        bt[i] = temp;
+        temp = p[max];
+        p[max] = p[i];
+        p[i] = temp;
+    }
+    for (i = 0; i < n; i++) {
+        wt[i + 1] = bt[i] + wt[i];
+        ta[i] = bt[i] + wt[i];
+        sum += ta[i];
+    }
+    for (i = 0; i < n; i++) {
+        printf("\nWaiting time for person %d is = %d", p[i], wt[i]);
+    }
+    printf("\n\n Student and teacher issue completed");
 
-    printf("Student %d is at the counter to get books issued.\n", id);
 }
 
-void* teacher(void* arg) {
-    int id = (int)arg; 
-    printf("Teacher %d enters the library and stands in the teacher queue.\n", id);
-
-    sem_wait(&counter_mutex);
-    teacher_count++;
-    if (student_count > 0) {
-        student_count--;
-        sem_post(&student_queue);
-    } else {
-        sem_post(&teacher_queue);
+void teacher_and_teacher() {
+    
+    int p[30], pr[30], bt[30], temp, max, wt[30], ta[30], sum = 0, i, j, n;
+    int c = 0, d = 0;
+    wt[0] = 0;
+    printf("Enter the number of persons=");
+    scanf("%d", &n);
+    printf("Enter 0 for teacher and 1 for student\n");
+    for (i = 0; i < n; i++) {
+        p[i] = i + 1;
+        bt[i] = 1;
+        printf("Who arrived %d? =", i + 1);
+        scanf("%d", &pr[i]);
+        if (pr[i] == 0) {
+            c = c + 1;
+        }
+        if (pr[i] == 0 && d == 1) {
+            pr[i] = pr[i] + 1;
+            d = 0;
+        }
+        if (c == 3) {
+            c = 0;
+            d = 1;
+        }
     }
-    sem_post(&counter_mutex);
+    for (i = 0; i < n; i++) {
+        max = i;
+        for (j = i + 1; j < n; j++) {
+            if (pr[j] < pr[max])
+                max = j;
+        }
+        temp = pr[max];
+        pr[max] = pr[i];
+        pr[i] = temp;
+        temp = bt[max];
+        bt[max] = bt[i];
+        bt[i] = temp;
+        temp = p[max];
+        p[max] = p[i];
+        p[i] = temp;
+    }
+    for (i = 0; i < n; i++) {
+        wt[i + 1] = bt[i] + wt[i];
+        ta[i] = bt[i] + wt[i];
+        sum += ta[i];
+    }
+    for (i = 0; i < n; i++) {
+        printf("\nWaiting time for person %d is = %d", p[i], wt[i]);
+    }
+    printf("\n\n Teacher and teacher issue completed\n");
 
-    printf("Teacher %d is at the counter to get books issued.\n", id);
 }
 
 int main() {
-    pthread_t teacher_threads[2], student_threads[3];
-    int teacher_ids[2] = {1, 2};
-    int student_ids[3] = {1, 2, 3};
+    int cases;
+    printf("Enter the case 1 or 2: ");
+    scanf("%d", &cases);
 
-    sem_init(&student_queue, 0, 0);
-    sem_init(&teacher_queue, 0, 0);
-    sem_init(&counter_mutex, 0, 1);
-    int i;
-
-    for ( i = 0; i < 2; i++) {
-        pthread_create(&teacher_threads[i], NULL, teacher, (void*)teacher_ids[i]); 
-    }
-
-    for ( i = 0; i < 3; i++) {
-        pthread_create(&student_threads[i], NULL, student, (void*)student_ids[i]); 
-    }
-
-    for ( i = 0; i < 2; i++) {
-        pthread_join(teacher_threads[i], NULL);
-    }
-
-    for ( i = 0; i < 3; i++) {
-        pthread_join(student_threads[i], NULL);
+    switch (cases) {
+        case 1:
+            teacher_and_student();
+            break;
+        case 2:
+            teacher_and_teacher();
+            break;
+        default:
+            printf("Wrong Cases_number");
+            exit(0);
     }
 
     return 0;
 }
+
 
 
 /*Code -2*/
